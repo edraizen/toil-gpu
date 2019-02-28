@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
 RUN apt-get -y update && apt-get -y upgrade
 
@@ -20,7 +20,12 @@ RUN chmod 777 /usr/bin/waitForKey.sh
 
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN bash Miniconda3-latest-Linux-x86_64.sh -b
-ENV PATH=/root/anaconda/bin:$PATH
+RUN rm Miniconda3-latest-Linux-x86_64.sh
+RUN /root/miniconda3/bin/conda create -n py36 python==3.6.7
+RUN echo "source activate py36" > /root/.bashrc
+RUN ls -la /root && cat /root/.bashrc
+ENV PATH /root/miniconda3/envs/py36/bin:/root/miniconda3/bin:$PATH
+RUN which python && which pip && which conda
 
 # The stock pip is too old and can't install from sdist with extras
 RUN pip install --upgrade pip==9.0.1
@@ -32,7 +37,9 @@ RUN pip install --upgrade setuptools==36.5.0
 RUN pip install --upgrade virtualenv==15.0.3
 
 # Install s3am (--never-download prevents silent upgrades to pip, wheel and setuptools)
-RUN virtualenv --never-download /home/s3am         && /home/s3am/bin/pip install s3am==2.0         && ln -s /home/s3am/bin/s3am /usr/local/bin/
+RUN conda create -n s3am python=2.7
+RUN /root/miniconda3/envs/s3am/bin/pip install s3am==2.0
+RUN ln -s /root/miniconda3/envs/s3am/bin/s3am /usr/local/bin/
 
 RUN pip install awscli --upgrade
 
@@ -60,6 +67,8 @@ RUN mkdir /var/lib/toil
 
 ENV TOIL_WORKDIR /var/lib/toil
 
+RUN apt-cache policy git-all
+RUN apt-get update && apt-get install -y git
 RUN git clone https://github.com/edraizen/toil.git toilsrc
 WORKDIR toilsrc
 RUN pip install .[all]
@@ -83,9 +92,11 @@ Version: edraizen/toil-gpu:latest\n\
 
 RUN apt-get -y update && apt-get -y upgrade
 
-RUN conda install pytorch-nightly cudatoolkit=9.0 -c pytorch
-RUN conda install google-sparsehash -c bioconda
-RUN conda install -c anaconda pillow
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+
+RUN conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
+RUN conda install -n py36 google-sparsehash -c bioconda
+RUN conda install -n py36 -c anaconda pillow
 
 RUN git clone https://github.com/facebookresearch/SparseConvNet.git
 WORKDIR SparseConvNet
