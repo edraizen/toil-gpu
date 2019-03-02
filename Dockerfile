@@ -15,6 +15,10 @@ RUN apt-get -y update && apt-get -y upgrade
 
 RUN apt-get -y install apt-transport-https ca-certificates software-properties-common
 
+RUN apt-cache policy git-all && \
+    apt-get update && \
+    apt-get install -y git
+
 RUN echo "deb http://repos.mesosphere.io/ubuntu/ xenial main"         > /etc/apt/sources.list.d/mesosphere.list         && apt-key adv --keyserver keyserver.ubuntu.com --recv E56151BF         && echo "deb http://deb.nodesource.com/node_6.x xenial main"         > /etc/apt/sources.list.d/nodesource.list         && apt-key adv --keyserver keyserver.ubuntu.com --recv 68576280
 
 RUN add-apt-repository -y ppa:jonathonf/python-3.6
@@ -66,12 +70,8 @@ RUN mkdir /var/lib/toil
 
 ENV TOIL_WORKDIR /var/lib/toil
 
-RUN apt-cache policy git-all && \
-    apt-get update && \
-    apt-get install -y git && \
-    git clone https://github.com/edraizen/toil.git toilsrc && \
-    pip install ./toilsrc[all] && \
-    rm -r toilsrc
+COPY toilsrc .
+RUN pip install ./toilsrc[all] && rm -r toilsrc
 
 # We intentionally inherit the default ENTRYPOINT and CMD from the base image, to the effect
 # that the running appliance just gives you a shell. To start the Mesos master or slave
@@ -95,6 +95,8 @@ RUN /root/miniconda3/bin/conda install -n py36 -c anaconda pillow
 RUN pip install torchnet torchviz
 
 RUN git clone https://github.com/facebookresearch/SparseConvNet.git && \
-    sed -i "s%torch.cuda.is_available()%True%g" SparseConvNet/setup.py && \
-    bash SparseConvNet/build.sh && \
-    rm -r SparseConvNet
+    sed -i "s%torch.cuda.is_available()%True%g" SparseConvNet/setup.py
+WORKDIR SparseConvNet
+RUN python setup.py insatll && python examples/hello-world.sh
+WORKDIR /
+RUN rm -r SparseConvNet

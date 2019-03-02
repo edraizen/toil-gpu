@@ -8,6 +8,7 @@ tag = 2019--${git_commit}
 
 # Steps
 build:
+	git clone https://github.com/edraizen/toil.git toilsrc
 	docker build -t ${name}:${tag} .
 	-docker rmi -f ${name}:latest
 	docker tag ${name}:${tag} ${name}:latest
