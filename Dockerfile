@@ -70,7 +70,7 @@ RUN mkdir /var/lib/toil
 
 ENV TOIL_WORKDIR /var/lib/toil
 
-COPY toilsrc .
+COPY toilsrc /toilsrc
 WORKDIR toilsrc
 RUN pip install .[all]
 WORKDIR /
