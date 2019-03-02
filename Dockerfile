@@ -100,6 +100,6 @@ RUN pip install torchnet torchviz
 RUN git clone https://github.com/facebookresearch/SparseConvNet.git && \
     sed -i "s%torch.cuda.is_available()%True%g" SparseConvNet/setup.py
 WORKDIR SparseConvNet
-RUN python setup.py install && python examples/hello-world.sh
+RUN python setup.py install && python examples/hello-world.py
 WORKDIR /
 RUN rm -r SparseConvNet
