@@ -71,7 +71,10 @@ RUN mkdir /var/lib/toil
 ENV TOIL_WORKDIR /var/lib/toil
 
 COPY toilsrc .
-RUN pip install ./toilsrc[all] && rm -r toilsrc
+WORKDIR toilsrc
+RUN pip install .[all]
+WORKDIR /
+RUN rm -r toilsrc
 
 # We intentionally inherit the default ENTRYPOINT and CMD from the base image, to the effect
 # that the running appliance just gives you a shell. To start the Mesos master or slave
