@@ -1,5 +1,16 @@
 FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
+# RUN apt-get update && \
+#     apt-get upgrade -y
+#
+# RUN apt-get update && \
+#     apt-get upgrade -y && \
+#     apt-get update && \
+#     apt-get install -y && \
+#         apt-transport-https \
+#         ca-certificates \
+#         software-properties-common
+
 RUN apt-get -y update && apt-get -y upgrade
 
 RUN apt-get -y install apt-transport-https ca-certificates software-properties-common
@@ -10,44 +21,32 @@ RUN add-apt-repository -y ppa:jonathonf/python-3.6
 
 RUN apt-get -y update
 
-RUN apt-get -y install libffi-dev python3.6 python3.6-dev python-dev python3-dev python-pip python3-pip libcurl4-openssl-dev libssl-dev wget curl openssh-server mesos=1.0.1-2.0.94.ubuntu1604 nodejs rsync screen tmux vim  && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get -y install libffi-dev libcurl4-openssl-dev libssl-dev wget curl openssh-server mesos=1.0.1-2.0.94.ubuntu1604 nodejs rsync screen tmux vim  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /root/.ssh &&         chmod 700 /root/.ssh
+RUN mkdir /root/.ssh && chmod 700 /root/.ssh
 
 ADD waitForKey.sh /usr/bin/waitForKey.sh
 
 RUN chmod 777 /usr/bin/waitForKey.sh
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash Miniconda3-latest-Linux-x86_64.sh -b
-RUN rm Miniconda3-latest-Linux-x86_64.sh
-RUN /root/miniconda3/bin/conda create -n py36 python==3.6.7
-RUN echo "source activate py36" > /root/.bashrc
-RUN ls -la /root && cat /root/.bashrc
-ENV PATH /root/miniconda3/envs/py36/bin:/root/miniconda3/bin:$PATH
-RUN which python && which pip && which conda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    bash Miniconda3-latest-Linux-x86_64.sh -b && \
+    rm Miniconda3-latest-Linux-x86_64.sh && \
+    /root/miniconda3/bin/conda create -n py36 python==3.6.7 && \
+    echo "source activate py36" > /root/.bashrc
+ENV PATH /root/miniconda3/envs/py36/bin:$PATH
+ENV PYTHONPATH /root/miniconda3/envs/py36/lib/python3.6/site-packages
 
 # The stock pip is too old and can't install from sdist with extras
-RUN pip install --upgrade pip==9.0.1
+RUN pip install --upgrade pip setuptools virtualenv awscli protobuf ipython
 
-# Default setuptools is too old
-RUN pip install --upgrade setuptools==36.5.0
-
-# Include virtualenv, as it is still the recommended way to deploy pipelines
-RUN pip install --upgrade virtualenv==15.0.3
-
-# Install s3am (--never-download prevents silent upgrades to pip, wheel and setuptools)
-RUN conda create -n s3am python=2.7
-RUN /root/miniconda3/envs/s3am/bin/pip install s3am==2.0
-RUN ln -s /root/miniconda3/envs/s3am/bin/s3am /usr/local/bin/
-
-RUN pip install awscli --upgrade
+RUN /root/miniconda3/bin/conda create -n s3am python=2.7.15 && \
+    /root/miniconda3/envs/s3am/bin/python -m pip install --upgrade pip && \
+    /root/miniconda3/envs/s3am/bin/pip install s3am==2.0 && \
+    ln -s /root/miniconda3/envs/s3am/bin/s3am /usr/local/bin/
 
 # Install statically linked version of docker client
 RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.06.1-ce.tgz          | tar -xvzf - --transform='s,[^/]*/,,g' -C /usr/local/bin/          && chmod u+x /usr/local/bin/docker
-
-# Fix for Mesos interface dependency missing on ubuntu
-RUN pip install protobuf==3.0.0
 
 # Fix for https://issues.apache.org/jira/browse/MESOS-3793
 ENV MESOS_LAUNCHER=posix
@@ -67,13 +66,12 @@ RUN mkdir /var/lib/toil
 
 ENV TOIL_WORKDIR /var/lib/toil
 
-RUN apt-cache policy git-all
-RUN apt-get update && apt-get install -y git
-RUN git clone https://github.com/edraizen/toil.git toilsrc
-WORKDIR toilsrc
-RUN pip install .[all]
-WORKDIR /
-WORKDIR rm -r toilsrc
+RUN apt-cache policy git-all && \
+    apt-get update && \
+    apt-get install -y git && \
+    git clone https://github.com/edraizen/toil.git toilsrc && \
+    pip install ./toilsrc[all] && \
+    rm -r toilsrc
 
 # We intentionally inherit the default ENTRYPOINT and CMD from the base image, to the effect
 # that the running appliance just gives you a shell. To start the Mesos master or slave
@@ -90,17 +88,13 @@ Version: edraizen/toil-gpu:latest\n\
 \n\
 ' > /etc/motd
 
-RUN apt-get -y update && apt-get -y upgrade
-
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+RUN /root/miniconda3/bin/conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
+RUN /root/miniconda3/bin/conda install -n py36 google-sparsehash -c bioconda
+RUN /root/miniconda3/bin/conda install -n py36 -c anaconda pillow
+RUN pip install torchnet torchviz
 
-RUN conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
-RUN conda install -n py36 google-sparsehash -c bioconda
-RUN conda install -n py36 -c anaconda pillow
-
-RUN git clone https://github.com/facebookresearch/SparseConvNet.git
-WORKDIR SparseConvNet
-RUN sed -i "s%torch.cuda.is_available()%True%g" setup.py
-RUN bash build.sh
-
-WORKDIR /
+RUN git clone https://github.com/facebookresearch/SparseConvNet.git && \
+    sed -i "s%torch.cuda.is_available()%True%g" SparseConvNet/setup.py && \
+    bash SparseConvNet/build.sh && \
+    rm -r SparseConvNet
