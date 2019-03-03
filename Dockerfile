@@ -49,6 +49,19 @@ RUN /root/miniconda3/bin/conda create -n s3am python=2.7.15 && \
     /root/miniconda3/envs/s3am/bin/pip install s3am==2.0 && \
     ln -s /root/miniconda3/envs/s3am/bin/s3am /usr/local/bin/
 
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+RUN /root/miniconda3/bin/conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
+RUN /root/miniconda3/bin/conda install -n py36 google-sparsehash -c bioconda
+RUN /root/miniconda3/bin/conda install -n py36 -c anaconda pillow
+RUN pip install torchnet torchviz
+
+RUN git clone https://github.com/facebookresearch/SparseConvNet.git && \
+    sed -i "s%torch.cuda.is_available()%True%g" SparseConvNet/setup.py
+WORKDIR SparseConvNet
+RUN python setup.py install && python examples/hello-world.py
+WORKDIR /
+RUN rm -r SparseConvNet
+
 # Install statically linked version of docker client
 RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.06.1-ce.tgz          | tar -xvzf - --transform='s,[^/]*/,,g' -C /usr/local/bin/          && chmod u+x /usr/local/bin/docker
 
@@ -90,16 +103,3 @@ Copyright (C) 2015-2018 Regents of the University of California\n\
 Version: edraizen/toil-gpu:latest\n\
 \n\
 ' > /etc/motd
-
-ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
-RUN /root/miniconda3/bin/conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
-RUN /root/miniconda3/bin/conda install -n py36 google-sparsehash -c bioconda
-RUN /root/miniconda3/bin/conda install -n py36 -c anaconda pillow
-RUN pip install torchnet torchviz
-
-RUN git clone https://github.com/facebookresearch/SparseConvNet.git && \
-    sed -i "s%torch.cuda.is_available()%True%g" SparseConvNet/setup.py
-WORKDIR SparseConvNet
-RUN python setup.py install && python examples/hello-world.py
-WORKDIR /
-RUN rm -r SparseConvNet
