@@ -19,13 +19,29 @@ RUN apt-cache policy git-all && \
     apt-get update && \
     apt-get install -y git
 
-RUN echo "deb http://repos.mesosphere.io/ubuntu/ xenial main"         > /etc/apt/sources.list.d/mesosphere.list         && apt-key adv --keyserver keyserver.ubuntu.com --recv E56151BF         && echo "deb http://deb.nodesource.com/node_6.x xenial main"         > /etc/apt/sources.list.d/nodesource.list         && apt-key adv --keyserver keyserver.ubuntu.com --recv 68576280
+RUN echo "deb http://repos.mesosphere.io/ubuntu/ xenial main" > /etc/apt/sources.list.d/mesosphere.list && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv E56151BF && \
+    echo "deb http://deb.nodesource.com/node_6.x xenial main" > /etc/apt/sources.list.d/nodesource.list && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv 68576280
+
+RUN echo "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
 
 RUN add-apt-repository -y ppa:jonathonf/python-3.6
 
 RUN apt-get -y update
 
-RUN apt-get -y install libffi-dev libcurl4-openssl-dev libssl-dev wget curl openssh-server mesos=1.0.1-2.0.94.ubuntu1604 nodejs rsync screen tmux vim  && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get -y install \
+  libffi-dev \
+  libcurl4-openssl-dev \
+  libssl-dev \
+  wget \
+  curl \
+  openssh-server
+  mesos \
+  nodejs \
+  rsync \
+  screen \
+  vim  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /root/.ssh && chmod 700 /root/.ssh
 
@@ -49,6 +65,8 @@ RUN /root/miniconda3/bin/conda create -n s3am python=2.7.15 && \
     /root/miniconda3/envs/s3am/bin/pip install s3am==2.0 && \
     ln -s /root/miniconda3/envs/s3am/bin/s3am /usr/local/bin/
 
+ENV PATH $PATH:/usr/local/cuda/bin
+ENV CUDA_HOME /usr/local/cuda
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
 RUN /root/miniconda3/bin/conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
 RUN /root/miniconda3/bin/conda install -n py36 google-sparsehash -c bioconda
@@ -83,11 +101,12 @@ RUN mkdir /var/lib/toil
 
 ENV TOIL_WORKDIR /var/lib/toil
 
-COPY toilsrc /toilsrc
+RUN git clone https://github.com/edraizen/toil.git toilsrc
 WORKDIR toilsrc
 RUN pip install .[all]
 WORKDIR /
 RUN rm -r toilsrc
+RUN ln -s /root/miniconda3/envs/py36/bin/_toil_mesos_executor /usr/local/bin/
 
 # We intentionally inherit the default ENTRYPOINT and CMD from the base image, to the effect
 # that the running appliance just gives you a shell. To start the Mesos master or slave
