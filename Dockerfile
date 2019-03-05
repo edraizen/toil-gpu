@@ -51,16 +51,16 @@ RUN chmod 777 /usr/bin/waitForKey.sh
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     bash Miniconda3-latest-Linux-x86_64.sh -b && \
     rm Miniconda3-latest-Linux-x86_64.sh && \
-    /root/miniconda3/bin/conda create -n py36 python==3.6.7 && \
-    echo ". /root/miniconda3/etc/profile.d/conda.sh && /root/miniconda3/bin/conda activate py36" > /root/.bashrc && \
+    /root/miniconda3/bin/conda install python==3.6.7 && \
+    echo ". /root/miniconda3/etc/profile.d/conda.sh" > /root/.bashrc && \
     echo ". /root/.bashrc && bash -c" > /root/miniconda3/bin/entrypoint.sh
-ENV PATH /root/miniconda3/envs/py36/bin:$PATH
-ENV PYTHONPATH /root/miniconda3/envs/py36/lib/python3.6/site-packages
+ENV PATH /root/miniconda3/bin:$PATH
+ENV PYTHONPATH /root/miniconda3/lib/python3.6/site-packages
 
 # The stock pip is too old and can't install from sdist with extras
 RUN pip install --upgrade pip setuptools virtualenv awscli protobuf ipython
 
-RUN /root/miniconda3/bin/conda create -n s3am python=2.7.15 && \
+RUN conda create -n s3am python=2.7.15 && \
     /root/miniconda3/envs/s3am/bin/python -m pip install --upgrade pip && \
     /root/miniconda3/envs/s3am/bin/pip install s3am==2.0 && \
     ln -s /root/miniconda3/envs/s3am/bin/s3am /usr/local/bin/
@@ -68,9 +68,9 @@ RUN /root/miniconda3/bin/conda create -n s3am python=2.7.15 && \
 ENV PATH $PATH:/usr/local/cuda/bin
 ENV CUDA_HOME /usr/local/cuda
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
-RUN /root/miniconda3/bin/conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
-RUN /root/miniconda3/bin/conda install -n py36 google-sparsehash -c bioconda
-RUN /root/miniconda3/bin/conda install -n py36 -c anaconda pillow
+RUN conda install -n py36 pytorch-nightly cudatoolkit=9.0 -c pytorch
+RUN conda install -n py36 google-sparsehash -c bioconda
+RUN conda install -n py36 -c anaconda pillow
 RUN pip install torchnet torchviz
 
 RUN git clone https://github.com/facebookresearch/SparseConvNet.git && \
