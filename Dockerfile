@@ -52,7 +52,8 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh &
     bash Miniconda3-latest-Linux-x86_64.sh -b && \
     rm Miniconda3-latest-Linux-x86_64.sh && \
     /root/miniconda3/bin/conda create -n py36 python==3.6.7 && \
-    echo "source activate py36" > /root/.bashrc
+    echo ". /root/miniconda3/etc/profile.d/conda.sh && /root/miniconda3/bin/conda activate py36" > /root/.bashrc && \
+    echo ". /root/.bashrc && bash -c" > /root/miniconda3/bin/entrypoint.sh
 ENV PATH /root/miniconda3/envs/py36/bin:$PATH
 ENV PYTHONPATH /root/miniconda3/envs/py36/lib/python3.6/site-packages
 
@@ -123,3 +124,5 @@ Copyright (C) 2015-2018 Regents of the University of California\n\
 Version: edraizen/toil-gpu:latest\n\
 \n\
 ' > /etc/motd
+
+ENTRYPOINT ["sh", "/root/miniconda3/bin/entrypoint.sh"]
