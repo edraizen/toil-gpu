@@ -30,13 +30,12 @@ RUN add-apt-repository -y ppa:jonathonf/python-3.6
 
 RUN apt-get -y update
 
-RUN apt-get -y install \
-  libffi-dev \
+RUN apt-get -y install libffi-dev \
   libcurl4-openssl-dev \
   libssl-dev \
   wget \
   curl \
-  openssh-server
+  openssh-server \
   mesos \
   nodejs \
   rsync \
