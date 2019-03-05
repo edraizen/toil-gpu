@@ -106,6 +106,8 @@ RUN pip install .[all]
 WORKDIR /
 RUN rm -r toilsrc
 RUN ln -s /root/miniconda3/envs/py36/bin/_toil_mesos_executor /usr/local/bin/
+RUN ln -s /root/miniconda3/envs/py36/bin/_toil_worker /usr/local/bin/
+RUN ln -s /root/miniconda3/envs/py36/bin/toil /usr/local/bin/
 
 # We intentionally inherit the default ENTRYPOINT and CMD from the base image, to the effect
 # that the running appliance just gives you a shell. To start the Mesos master or slave
